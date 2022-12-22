@@ -5,11 +5,11 @@ import psycopg2
 import requests
 
 API_URL = "https://jsonplaceholder.typicode.com/posts"
-logging.basicConfig(filename= "log.log", level= logging.INFO)
 CREATED_ON = datetime.date.today().strftime("%Y-%m-%d")
-table = False
-print(CREATED_ON)
+CSV_FILENAME = "dataincsv2.csv"
+USER_ID = 2
 
+logging.basicConfig(filename="log2.log", level=logging.INFO)
 
 response = requests.get(url=API_URL, )
 data = response.json()
@@ -27,14 +27,12 @@ def write_csv(json_data, name: str):
         for item in json_data:
             new_row = [x for x in item.values()]
             new_row.append(CREATED_ON)
-            if new_row[0] == 2:
+            if new_row[0] == USER_ID:
                 writer.writerow(new_row)
+    logging.info("CSV file created")
 
 
-write_csv(data, "dataincsv2.csv")
-
-
-def Create_connection():
+def create_connection():
     connection = psycopg2.connect(user="postgres",
                                   password="Shubham@123",
                                   host="localhost",
@@ -55,49 +53,50 @@ def create_table(keys):
     );
     """
     try:
-        connection1, cursor1 = Create_connection()
+        connection1, cursor1 = create_connection()
         cursor1.execute(sql_create)
         connection1.commit()
+        print("New table created")
+        logging.info("New table created")
     except psycopg2.errors.DuplicateTable:
+        logging.info("Table already Exists")
         if connection1:
             cursor1.close()
             connection1.close()
         return None
     except Exception as e:
-        print("Error while crrating table ", e)
+        logging.error("Error while creating table ", e)
+        print("Error while creating table ", e)
     finally:
         if connection1:
             cursor1.close()
             connection1.close()
 
 
-
 def insert_data():
-    global values
     try:
-        connection2, cursor2 = Create_connection()
+        connection2, cursor2 = create_connection()
         for item in data:
-            values = [x for x in item.values()]
-            values.append(CREATED_ON)
-            if values[0] == 2:
+            if item[KEYS[0]] == USER_ID:
+                values = [x for x in item.values()]
+                values.append(CREATED_ON)
                 insert_query = f"insert into user_data values {tuple(values)}"
                 cursor2.execute(insert_query)
         connection2.commit()
         print("data inserted in table")
+        logging.info("data inserted in table")
 
     except Exception as e:
         print("Error while inserting data ", e)
+        logging.error("Error while inserting data ", e)
     finally:
         if connection2:
             cursor2.close()
             connection2.close()
 
-if table == False:
-    create_table(KEYS)
+
+write_csv(data, CSV_FILENAME)
+
+create_table(KEYS)
 
 insert_data()
-
-
-
-
-
